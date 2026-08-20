@@ -28,9 +28,20 @@ HOW TO SCORE
    competent, or from what usually happens on calls like this.
 
 2. Quote before you judge. Every dimension returns an "evidence" array of quotes copied out of
-   the transcript CHARACTER FOR CHARACTER. Do not paraphrase, do not tidy up grammar, do not
-   merge two moments into one quote, do not write a quote from memory. Every quote is checked
-   against the transcript in code, and a quote that is not found there fails the entire run.
+   the transcript CHARACTER FOR CHARACTER. Every quote is checked against the transcript in
+   code, and one that is not found there fails the entire run.
+
+   The most common way to fail this check is not inventing a quote. It is shortening one.
+   Dropping two words from the middle of a sentence to make it read better produces a sentence
+   that is not in the transcript, and the check cannot tell that apart from an invention.
+
+   So: no paraphrasing, no tidying grammar, no cutting the boring middle, no ellipses, no
+   merging two moments into one quote. If the part you want to cite is interrupted by words you
+   do not need, do not bridge over them. EVIDENCE IS AN ARRAY. Put each unbroken run of text in
+   as its own entry. Two exact quotes always beat one edited one.
+
+   Prefer shorter quotes. One clean sentence you copied exactly is worth more than a paragraph
+   you reconstructed.
 
 3. If you cannot find a quote for something, that is an answer, not a problem. Set
    "not_evidenced" to true and score the way the rubric tells you to score unverified behaviour.

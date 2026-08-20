@@ -162,3 +162,18 @@ test('a projection cannot break through a total cap', () => {
   assert.equal(s.percent, 75)
   assert.equal(s.projected, null, 'fixing D9 cannot lift a call above its ceiling')
 })
+
+/* ---- the stale-run guard ---- */
+
+test('the stale threshold is longer than the function is allowed to live', async () => {
+  const { SCORING_MAX_DURATION_SECONDS, STALE_AFTER_MS } = await import('../lib/scoring/run.ts')
+
+  // A row is only declared dead once it has been running longer than the function could
+  // possibly have survived. Set this below the duration limit and a healthy job gets reaped
+  // mid-flight, which would be worse than the bug it exists to fix.
+  assert.ok(STALE_AFTER_MS > SCORING_MAX_DURATION_SECONDS * 1000)
+
+  // And longer than the slowest run measured against the real transcripts, with room.
+  const SLOWEST_MEASURED_MS = 181_700
+  assert.ok(STALE_AFTER_MS > SLOWEST_MEASURED_MS * 1.5)
+})

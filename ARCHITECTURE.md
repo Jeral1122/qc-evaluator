@@ -296,6 +296,29 @@ constraint, not a polite request in the prompt:
 That substring check is cheap and it is the difference between a system that claims not to
 hallucinate and one that cannot.
 
+**What it actually caught, and what that changed.** On the third real run it rejected this:
+
+> transcript: `...rather than sitting back` **`and waiting`**`. So I'm going to check in proactively...`
+> model:      `...rather than sitting back. So I'm going to check in proactively...`
+
+Two words dropped from the middle of a sentence, presented as a verbatim quote. Not an
+invention. A tidy-up. And a coach who searched the transcript for that sentence would not have
+found it, which makes it exactly as damaging as an invention and completely invisible to
+inspection.
+
+The interesting part is what to do about it, because a strict check that fails one run in three
+is not a product. Two options: loosen the check, or fix the cause.
+
+**The check stays.** The failure was elision, and the prompt already had an unused answer to it:
+`evidence` is an ARRAY. There is never a reason to bridge over words you do not want, because
+two exact quotes can go in as two entries. The prompt now says so explicitly, tells the model
+that shortening is the most common way to fail rather than inventing, and asks for shorter
+quotes. The same transcript then scored 97/100 with every quote verified.
+
+Loosening the matcher would have made the failure invisible instead of absent. Naming the exact
+behaviour in the prompt made it stop happening. Worth saying in the video, because the
+temptation to soften a check that just failed is the whole trap.
+
 **What an absent behaviour scores, corrected.** The first draft of this document said an
 unevidenced dimension scores 0 and is labelled `not_evidenced`. The rubrics say otherwise, in
 both files. Kick-off principle 4: if a behaviour cannot be verified, score the lower tier of the

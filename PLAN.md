@@ -186,7 +186,7 @@ never change again.
 
 ---
 
-## Phase 2 — Prompt, schema, one call · ~40 min
+## Phase 2 — Prompt, schema, one call · ~40 min · ✅ DONE
 
 **`schema.ts`** builds the Zod schema from the spec, so the schema can never disagree with the
 rubric. Per-dimension score is `z.union` of literals from `allowedScores(dimension)`, which
@@ -231,7 +231,7 @@ approach works.
 
 ---
 
-## Phase 3 — Validation and the maths · ~40 min
+## Phase 3 — Validation and the maths · ~40 min · ✅ DONE
 
 **The graded core.** Pure functions. No network, no database, fully unit tested.
 
@@ -268,7 +268,7 @@ approach works.
 
 ---
 
-## Phase 4 — Database and routes · ~40 min
+## Phase 4 — Database and routes · ~40 min · ✅ DONE
 
 **`POST /api/runs`** — validate the transcript is non-empty and the rubric key is known, insert
 `queued`, `waitUntil(score(id))`, return `201 { id }`. Explicit `maxDuration`. The insert happens
