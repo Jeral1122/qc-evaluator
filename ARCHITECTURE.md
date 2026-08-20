@@ -82,6 +82,22 @@ after the response is flushed. A single scoring call is one LLM round trip, well
 A real queue (Inngest, QStash, pg cron) is the correct answer at volume or with retries. It is not
 the correct answer for one operator pasting one transcript, and it costs an hour of the four.
 
+**Measured, not assumed.** Two real runs against the supplied transcripts:
+
+| Transcript | Characters | Input tokens | Output tokens | Wall clock |
+|---|---|---|---|---|
+| `kickoff-02.txt` | 15,749 | 6,161 | 13,890 | **181.7s** |
+| `coaching-02.txt` | 64,795 | 22,810 | 9,872 | **130.9s** |
+
+The longer transcript was faster. Latency here tracks output tokens, which means the report plus
+the model's own reasoning, not the length of the input. A four-fold increase in transcript size
+cost nothing. That is worth knowing, because it kills the intuition that the 65,000 character
+transcript is the hard case: it is not, and no chunking strategy would have helped anything.
+
+What it does mean is that a run takes **two to three minutes**, which is far past a default
+serverless function limit. `maxDuration` has to be raised explicitly, and the stale-run guard
+below stops the run from hanging forever if it is still not enough.
+
 ---
 
 ## 3. Run state machine
@@ -190,12 +206,47 @@ Dimension caps clamp the dimension before summing. Total caps clamp the percenta
 When more than one total cap fires, the lowest wins. **Every fired cap is named in the report**,
 because a coach told they scored 70 deserves to know it was a ceiling and not a tally.
 
+**1b. Structured output has a size limit, so validation happens in two places.**
+
+The first version of the schema gave each of the twelve dimensions its own list of permitted
+scores, making an out-of-band score literally unrepresentable. The API rejected it: *"The
+compiled grammar is too large."* Structured output is enforced by compiling the schema into a
+decoding grammar, and twelve distinct unions inside twelve distinct object shapes exceeds what
+that will accept.
+
+So there are two gates instead of one. The schema blocks any score that appears **nowhere** in
+the rubric, which keeps the grammar small. `verify.ts` blocks any score that is legal somewhere
+in the rubric but illegal for **that** dimension, and fails the run with a message naming the
+dimension. A 10 on a dimension worth 5 is caught, just a second later than before.
+
 **2. Discrete buckets, no interpolation.** The coaching rubric says it outright: each dimension's
 score must be exactly one of the values listed in its own table. D4 allows 15, 10, 5 or 0 and
 nothing between. So the Zod schema is a per-dimension enum built from the rubric file, not an
 integer range. A model handing back 12.5 fails the run.
 
-**3. Coaching D4 is optional and the rubric prescribes how.** Movement Coaching Quality switches
+**3. TWO coaching dimensions are conditional, and they are described differently.**
+
+This one was found by running the system, not by reading the rubric. On `coaching-02.txt` the
+model marked D2 N/A, `verify.ts` was ready to fail the run for it, and the rubric turned out to
+be on the model's side. Buried at the end of D2, not in the preamble where D4's rule sits:
+
+> *"If diagnostics not applicable this cycle (non-milestone call, no video submitted), note this
+> and score N/A — redistribute weight to D3 and D4. Do not penalize the coach."*
+
+Diagnostics only happen at weeks 8, 16 and 24, so most coaching calls have none to review. The
+first version of the spec missed it, and a test asserting "exactly one dimension is optional"
+locked the mistake in. Both are corrected.
+
+**How each is handled:** the dimension leaves *both* sides of the fraction. Removing it from the
+denominator **is** redistribution — every surviving dimension becomes worth proportionally more
+of the total, and the coach is not punished for a dimension the call was never meant to contain.
+
+That deviates from the letter of D2's note, which sends the weight to D3 and D4 specifically.
+Deliberately: the note gives no proportions, and sending weight to D4 breaks on a call where D4
+is itself disabled, which is exactly what `coaching-02.txt` is. Proportional across all survivors
+is the only reading that holds in every combination. **Second question I would have asked.**
+
+**3b. D4 specifically, and the mechanics the rubric prescribes.** Movement Coaching Quality switches
 off when all four detection criteria are absent: no live movement, no setup/breathing/control
 cues, no video review with real-time feedback, no real-time form correction. If even one is
 present it scores normally. The rubric names the fields it wants back: `disabled`,

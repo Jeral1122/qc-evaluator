@@ -24,10 +24,13 @@ console.log(`${rubric.title} · ${transcriptPath} · ${transcript.length.toLocal
 
 const { draft, usage } = await scoreTranscript(rubric, transcript)
 
+// The model returns a list; look them up by id so the print order is the rubric's, not its.
+const byId = new Map(draft.dimensions.map((d) => [d.id, d]))
+
 // Raw scores only. No total is printed, because computing the total is Phase 3's job and
 // guessing at it here would be exactly the shortcut this design is built to avoid.
 for (const dimension of rubric.dimensions) {
-  const d = draft.dimensions[dimension.id] as Record<string, unknown>
+  const d = byId.get(dimension.id)!
 
   if (d.disabled) {
     console.log(`${dimension.id.padEnd(4)} ${dimension.name.padEnd(34)} N/A    ${d.disabled_reason}`)
@@ -37,7 +40,7 @@ for (const dimension of rubric.dimensions) {
   const score = d.score as number
   const label = bandFor(dimension, score)?.name ?? '??'
   const flag = d.not_evidenced ? ' [not evidenced]' : ''
-  const quotes = (d.evidence as string[]).length
+  const quotes = d.evidence.length
   console.log(
     `${dimension.id.padEnd(4)} ${dimension.name.padEnd(34)} ${String(score).padStart(4)}/${String(dimension.max).padEnd(3)} ` +
       `${label.padEnd(8)} ${quotes} quote${quotes === 1 ? '' : 's'}${flag}`,
@@ -67,7 +70,7 @@ const normalise = (s: string) => s.replace(/\s+/g, ' ').trim().toLowerCase()
 const haystack = normalise(transcript)
 const fabricated: string[] = []
 for (const dimension of rubric.dimensions) {
-  const d = draft.dimensions[dimension.id] as { evidence: string[] }
+  const d = byId.get(dimension.id)!
   for (const quote of d.evidence) {
     if (!haystack.includes(normalise(quote))) fabricated.push(`${dimension.id}: ${quote}`)
   }
@@ -83,7 +86,7 @@ if (fabricated.length === 0) {
 
 // Sanity check that the schema did its job.
 const outOfBand = rubric.dimensions.filter((dimension) => {
-  const d = draft.dimensions[dimension.id] as { score: number | null; disabled?: boolean }
+  const d = byId.get(dimension.id)!
   return !d.disabled && d.score !== null && !allowedScores(dimension).includes(d.score)
 })
 console.log(`  ${outOfBand.length === 0 ? 'every score sits in a real band' : `OUT OF BAND: ${outOfBand.map((d) => d.id)}`}`)

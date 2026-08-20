@@ -39,7 +39,11 @@ export async function scoreTranscript(
   const client = new Anthropic()
   const startedAt = Date.now()
 
-  const response = await client.messages.parse({
+  // Streaming, not because we show progress, but because the SDK refuses a non-streaming
+  // request whose max_tokens could push it past the 10 minute HTTP timeout. Nothing here
+  // consumes the individual chunks: finalMessage() waits for the whole thing and hands back
+  // the validated object.
+  const stream = client.messages.stream({
     model: SCORING_MODEL,
     max_tokens: MAX_TOKENS,
     system: SYSTEM_PROMPT,
@@ -48,6 +52,8 @@ export async function scoreTranscript(
     ],
     output_config: { format: zodOutputFormat(buildReportSchema(rubric)) },
   })
+
+  const response = await stream.finalMessage()
 
   // Every one of these means the report is unusable, and each says so in words an operator can
   // act on. "A failed run says why" is a requirement, so a bare exception is not good enough.

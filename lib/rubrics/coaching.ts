@@ -13,9 +13,21 @@ import type { RubricSpec } from './types.ts'
  *    contradicts itself by 5 points either way. We normalise against the summed maximums instead
  *    of trusting either number, so the maths is consistent whichever was meant. See ARCHITECTURE.md.
  *
- * 3. D4 is optional. When a call contains no movement coaching at all, D4 leaves both sides of
- *    the fraction rather than scoring zero. A strategy-only call has not failed at movement work,
- *    it simply did not contain any.
+ * 3. TWO dimensions are conditional, and the rubric describes them differently.
+ *
+ *    D4 (movement coaching) switches off when all four detection criteria are absent, and the
+ *    rubric says the call is then "scored out of 85, not 100".
+ *
+ *    D2 (diagnostics) scores N/A on a non-milestone call with no video submitted, and the rubric
+ *    says to "redistribute weight to D3 and D4" without saying in what proportion.
+ *
+ *    Both are handled the same way here: the dimension leaves BOTH sides of the fraction, and
+ *    the total is normalised against what remains. Dropping a dimension from the denominator IS
+ *    redistribution - every surviving dimension becomes worth proportionally more. It differs
+ *    from the letter of D2's note, which sends the weight to D3 and D4 specifically, and that
+ *    deviation is deliberate: the note gives no proportions, and sending weight to D4 breaks on
+ *    a call where D4 is itself disabled. Proportional across all survivors is the reading that
+ *    holds in every combination. See ARCHITECTURE.md.
  */
 export const coaching: RubricSpec = {
   key: 'coaching',
@@ -35,9 +47,14 @@ export const coaching: RubricSpec = {
       ],
     },
     {
+      // Also conditional, by a different route than D4. The rubric's scoring note: "If
+      // diagnostics not applicable this cycle (non-milestone call, no video submitted), note
+      // this and score N/A - redistribute weight to D3 and D4. Do not penalize the coach."
+      // Diagnostics only happen at weeks 8, 16 and 24, so most calls have none to review.
       id: 'D2',
       name: 'Diagnostics Review',
       max: 10,
+      optional: true,
       bands: [
         { name: 'Elite', min: 10, max: 10 },
         { name: 'Strong', min: 7, max: 7 },

@@ -24,7 +24,7 @@ scored out of 100 against the client's own rubric at a permanent URL, downloadab
 | Path | What |
 |---|---|
 | `rubrics/kickoff-call-rubric.md` | 12 dimensions, maxes sum to 100, **band ranges** |
-| `rubrics/coaching-call-rubric.md` | 12 dimensions, maxes sum to 105, **exact values**, D4 optional |
+| `rubrics/coaching-call-rubric.md` | 12 dimensions, maxes sum to 105, **exact values**, D2 and D4 conditional |
 | `transcripts/*.txt` | four real calls, not all good ones |
 
 **Never edit these.** They are the client's own words and the whole exercise is scoring against
@@ -36,7 +36,7 @@ values ("15, 10, 5, 0") and forbids interpolation. Code must respect both.
 
 ---
 
-## Six rules that decide this build
+## Seven rules that decide this build
 
 1. **Never invent a quote.** Every evidence quote is substring-checked against the submitted
    transcript in code. A fabricated quote fails the run. This is not a prompt instruction, it is a
@@ -50,13 +50,17 @@ values ("15, 10, 5, 0") and forbids interpolation. Code must respect both.
    applicable maximums, then total caps clamp the percentage. Both rubrics open with a cap table.
    The report names which cap fired.
 
-4. **Score inside the rubric's own bands.** No value that falls in a gap between two bands, and no
+4. **Two coaching dimensions can be N/A, not one.** D4 switches off when no movement coaching
+   happened. D2 scores N/A on a non-milestone call with no video submitted, and that rule is
+   buried at the end of D2 rather than in the preamble. Both leave the denominator entirely.
+
+5. **Score inside the rubric's own bands.** No value that falls in a gap between two bands, and no
    band boundary invented that the rubric does not state.
 
-5. **The rubric text goes into the prompt whole.** The calibration anchors are real reviewer
+6. **The rubric text goes into the prompt whole.** The calibration anchors are real reviewer
    corrections. Summarising them is how scoring drifts off the human standard.
 
-6. **No scope nobody asked for.** Five routes. No auth, no run history, no coach comparison, no
+7. **No scope nobody asked for.** Five routes. No auth, no run history, no coach comparison, no
    rubric editing, no retries, no streaming, no feedback panel, no voice agents. Knowing what to
    leave out is part of what is being scored.
 

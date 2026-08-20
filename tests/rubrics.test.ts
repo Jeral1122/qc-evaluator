@@ -70,11 +70,15 @@ test('every cap points at a dimension that exists and a max it could reach', () 
   }
 })
 
-test('exactly one dimension is optional, and only on coaching', () => {
+test('the conditional dimensions are D2 and D4, and only on coaching', () => {
+  // Kick-off's own preamble says "all twelve dimensions active".
   assert.equal(RUBRICS.kickoff.dimensions.filter((d) => d.optional).length, 0)
-  const optional = RUBRICS.coaching.dimensions.filter((d) => d.optional)
-  assert.equal(optional.length, 1)
-  assert.equal(optional[0].id, 'D4')
+  // Coaching has two, for different reasons: D2 diagnostics only run at weeks 8/16/24, and D4
+  // movement coaching switches off when no movement happened. Both leave the denominator.
+  assert.deepEqual(
+    RUBRICS.coaching.dimensions.filter((d) => d.optional).map((d) => d.id),
+    ['D2', 'D4'],
+  )
 })
 
 test('overall bands descend and cover every score from 0 to 100', () => {
