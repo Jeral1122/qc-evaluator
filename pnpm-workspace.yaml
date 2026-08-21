@@ -1,6 +1,0 @@
-allowBuilds:
-  unrs-resolver: set this to true or false
-minimumReleaseAgeExclude:
-  - '@vercel/cli-config@0.2.4'
-  - '@vercel/functions@3.9.5'
-  - '@vercel/oidc@3.8.5'

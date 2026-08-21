@@ -46,3 +46,9 @@ next-env.d.ts
 # Private working notes. Contains BeaverMind's comp range and Jay's own framing
 # of the hiring process, neither of which belongs in a repo they will read.
 CONTEXT.md
+
+# This project is npm + package-lock.json. A second lockfile makes the deploy
+# pick a package manager at random, so stray ones are kept out of the repo.
+pnpm-lock.yaml
+pnpm-workspace.yaml
+yarn.lock
