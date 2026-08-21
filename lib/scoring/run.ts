@@ -23,6 +23,32 @@ export const SCORING_MAX_DURATION_SECONDS = 300
  */
 export const STALE_AFTER_MS = (SCORING_MAX_DURATION_SECONDS + 30) * 1000
 
+/** The sentence an operator sees when a job died without being able to say so. */
+export const TIMED_OUT_REASON =
+  'Scoring timed out. The background job was stopped before it finished, so no report was ' +
+  'produced. Submitting the transcript again will start a fresh run.'
+
+/**
+ * Is this row a job in progress, or a corpse?
+ *
+ * Lives here rather than in the two places that ask, so the page and the status endpoint can
+ * never drift into disagreeing about whether a run is dead. It also keeps the clock out of
+ * React's render path, where reading the time is genuinely a bug: a value that changes on every
+ * render is not something a component should be deciding from.
+ *
+ * `started_at` is null for a row that never got claimed, in which case the clock runs from when
+ * it was created. A run that sits in `queued` forever is just as dead as one that hung.
+ */
+export function isStaleRun(run: {
+  status: string
+  started_at: string | null
+  created_at: string
+}): boolean {
+  if (run.status !== 'running' && run.status !== 'queued') return false
+  const began = Date.parse(run.started_at ?? run.created_at)
+  return Date.now() - began > STALE_AFTER_MS
+}
+
 /**
  * The whole scoring job, start to finish.
  *

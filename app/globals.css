@@ -1,26 +1,102 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/*
+ * An editorial report, not an app screen.
+ *
+ * The thing being made is a document a coach reads and then prints. So it is built the way a
+ * printed performance review is built: one column, wide margins, hairline rules between
+ * sections, and no cards, pills, shadows or progress bars. The restraint is the design.
+ *
+ * Deliberately light only. A dark theme would be a second visual language to maintain, and the
+ * PDF is the native form of this thing. Paper is not dark.
+ */
+
+@theme {
+  /* Warm off-white. Pure #fff reads as a screen; this reads as paper. */
+  --color-paper: #fbfaf7;
+  --color-ink: #1a1917;
+  --color-ink-soft: #55524b;
+  --color-ink-faint: #8b877d;
+  --color-rule: #e4e0d6;
+  --color-quote: #f4f1e9;
+
+  /* One accent per band, taken from the client's own five names. */
+  --color-band-elite: #1f6f4a;
+  --color-band-strong: #2c5c8a;
+  --color-band-inconsistent: #9a6b1f;
+  --color-band-atrisk: #a8501f;
+  --color-band-fail: #8c2f2f;
+
+  --font-display: var(--font-display), Georgia, "Times New Roman", serif;
+  --font-sans: var(--font-body), ui-sans-serif, system-ui, sans-serif;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  color-scheme: light;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--color-paper);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  /* Figures line up down the page, which matters when twelve scores sit in a column. */
+  font-variant-numeric: tabular-nums;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* The label above each section. Small, spaced, quiet. */
+.eyebrow {
+  font-size: 0.6875rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-ink-faint);
+}
+
+/*
+ * Evidence is speech, so it is set as speech: indented, with a rule down the left, upright
+ * rather than italic. Italics would style it as emphasis, and a quote from a transcript is
+ * not emphasis, it is the record.
+ */
+.evidence {
+  border-left: 2px solid var(--color-rule);
+  background: var(--color-quote);
+}
+
+/* Native disclosure triangles look like an OS widget. The chevron is drawn instead. */
+summary::-webkit-details-marker { display: none; }
+summary { list-style: none; }
+
+/* ------------------------------------------------------------------ *
+ * Print. The PDF is the same components, so this is the only place
+ * screen and paper are allowed to differ.
+ * ------------------------------------------------------------------ */
+@media print {
+  @page {
+    margin: 18mm 16mm;
+  }
+
+  html, body {
+    background: #fff;
+  }
+
+  /* Anything that only makes sense with a cursor. */
+  .no-print { display: none !important; }
+
+  /* The disclosure chevron is an affordance, and paper has nothing to click. */
+  summary svg { display: none; }
+  summary { cursor: default; }
+
+  /* A dimension split across a page break is unreadable, and there are twelve of them. */
+  .avoid-break {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  /* Browsers drop background colours when printing unless told otherwise. */
+  .evidence {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  a[href]::after { content: none; }
 }

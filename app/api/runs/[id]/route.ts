@@ -1,5 +1,5 @@
 import { db } from '@/lib/supabase.ts'
-import { STALE_AFTER_MS } from '@/lib/scoring/run.ts'
+import { isStaleRun, TIMED_OUT_REASON } from '@/lib/scoring/run.ts'
 import type { Run } from '@/lib/types.ts'
 
 /** What the page polls while a run is queued or running. */
@@ -37,20 +37,16 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
  * nobody is looking at. The write is idempotent and only ever moves a row into a terminal state.
  */
 async function reapIfStale(run: Run): Promise<Run> {
-  if (run.status !== 'running') return run
-
-  const startedAt = run.started_at ? Date.parse(run.started_at) : Date.now()
-  if (Date.now() - startedAt < STALE_AFTER_MS) return run
+  if (!isStaleRun(run)) return run
 
   const reaped: Partial<Run> = {
     status: 'failed',
-    error_reason:
-      'Scoring timed out. The background job was stopped before it finished, so no report was produced. Submitting the transcript again will start a fresh run.',
+    error_reason: TIMED_OUT_REASON,
     completed_at: new Date().toISOString(),
   }
 
-  // Still guarded on status, so a job that finished a moment ago is never overwritten.
-  await db().from('runs').update(reaped).eq('id', run.id).eq('status', 'running')
+  // Still guarded on the status it had, so a job that finished a moment ago is never overwritten.
+  await db().from('runs').update(reaped).eq('id', run.id).eq('status', run.status)
 
   return { ...run, ...reaped } as Run
 }

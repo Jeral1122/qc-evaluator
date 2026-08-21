@@ -289,7 +289,7 @@ before Claude is touched, so the URL is valid the instant it is handed out.
 
 ---
 
-## Phase 5 — The report, editorial · ~60 min
+## Phase 5 — The report, editorial · ~60 min · ✅ DONE
 
 ### The look
 
@@ -327,7 +327,7 @@ confused by anything on it.
 
 ---
 
-## Phase 6 — Print and PDF · ~20 min
+## Phase 6 — Print and PDF · ~20 min · ✅ DONE (built alongside phase 5)
 
 `/runs/[id]/print` renders `Report.tsx` with every dimension forced open. `print.css` sets page
 margins, hides all chrome, and forbids a page break inside a dimension block. The download button
