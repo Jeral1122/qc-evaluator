@@ -80,8 +80,34 @@ console.log(`\nRED FLAGS`)
 if (verified.red_flags.length === 0) console.log('  none')
 for (const f of verified.red_flags) console.log(`  ${f.flag}\n    ${f.why}`)
 
+// Per million tokens, by model. Cache writes bill at 1.25x input, cache reads at 0.1x.
+// Hardcoding one model's rates here silently mispriced every other model, so the table is
+// keyed and an unknown model says so rather than quietly reporting a wrong number.
+const RATES: Record<string, { input: number; output: number }> = {
+  'claude-opus-5': { input: 5, output: 25 },
+  'claude-sonnet-5': { input: 3, output: 15 },
+  'claude-haiku-4-5': { input: 1, output: 5 },
+}
+const base = RATES[SCORING_MODEL]
+const RATE = base && {
+  input: base.input,
+  output: base.output,
+  cacheWrite: base.input * 1.25,
+  cacheRead: base.input * 0.1,
+}
+const cost =
+  RATE &&
+  (usage.inputTokens * RATE.input +
+    usage.outputTokens * RATE.output +
+    usage.cacheWriteTokens * RATE.cacheWrite +
+    usage.cacheReadTokens * RATE.cacheRead) /
+    1_000_000
+
 console.log(
-  `\nUSAGE  ${usage.inputTokens.toLocaleString()} in (${usage.cacheReadTokens.toLocaleString()} cached) · ` +
+  `\nUSAGE  ${usage.inputTokens.toLocaleString()} uncached in · ` +
+    `${usage.cacheWriteTokens.toLocaleString()} cache write · ` +
+    `${usage.cacheReadTokens.toLocaleString()} cache read · ` +
     `${usage.outputTokens.toLocaleString()} out · ${(usage.ms / 1000).toFixed(1)}s`,
 )
+console.log(cost === undefined ? `COST   no published rate on file for ${SCORING_MODEL}` : `COST   $${cost.toFixed(4)}`)
 console.log(`\nEvery quote above was verified present in the transcript, or this would have exited 1.`)

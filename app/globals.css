@@ -1,102 +1,184 @@
 @import "tailwindcss";
 
 /*
- * An editorial report, not an app screen.
+ * Two grounds, one document.
  *
- * The thing being made is a document a coach reads and then prints. So it is built the way a
- * printed performance review is built: one column, wide margins, hairline rules between
- * sections, and no cards, pills, shadows or progress bars. The restraint is the design.
+ * A dark rail holds identity and the verdict; the paper column holds the reading. The split is
+ * not decoration: the operator's eye needs one fixed place for the score while the detail
+ * scrolls, and a coach printing the thing needs the reading column to be paper and nothing else.
  *
- * Deliberately light only. A dark theme would be a second visual language to maintain, and the
- * PDF is the native form of this thing. Paper is not dark.
+ * The dark is warm, mixed from the same hue family as the paper, so the two grounds read as one
+ * object seen from two sides rather than as a light theme with a black box parked on it.
  */
 
 @theme {
-  /* Warm off-white. Pure #fff reads as a screen; this reads as paper. */
+  /* Paper side */
   --color-paper: #fbfaf7;
-  --color-ink: #1a1917;
-  --color-ink-soft: #55524b;
-  --color-ink-faint: #8b877d;
-  --color-rule: #e4e0d6;
-  --color-quote: #f4f1e9;
+  --color-ink: #171613;
+  --color-ink-soft: #4a4740;      /* 8.1:1 on paper */
+  --color-ink-faint: #6f6b61;     /* 4.9:1 on paper, so it can carry real text */
+  --color-rule: #e0dbcf;
+  --color-quote: #f2eee4;
 
-  /* One accent per band, taken from the client's own five names. */
-  --color-band-elite: #1f6f4a;
-  --color-band-strong: #2c5c8a;
-  --color-band-inconsistent: #9a6b1f;
-  --color-band-atrisk: #a8501f;
-  --color-band-fail: #8c2f2f;
+  /* Rail side */
+  --color-rail: #14130f;
+  --color-rail-ink: #f6f3ec;
+  --color-rail-soft: #b3ada0;     /* 7.4:1 on rail */
+  --color-rail-faint: #8a857a;    /* 4.6:1 on rail */
+  --color-rail-rule: #2c2a24;
 
-  --font-display: var(--font-display), Georgia, "Times New Roman", serif;
+  /* Bands, twice: the same five judgements have to read on both grounds. */
+  --color-band-elite: #1a6845;
+  --color-band-strong: #29557f;
+  --color-band-inconsistent: #8a5f18;
+  --color-band-atrisk: #9c4718;
+  --color-band-fail: #8a2a2a;
+
+  --color-lit-elite: #63c295;
+  --color-lit-strong: #86b4e6;
+  --color-lit-inconsistent: #e0b15f;
+  --color-lit-atrisk: #ec8a5c;
+  --color-lit-fail: #e8736b;
+
+  --font-display: var(--font-display), Georgia, serif;
   --font-sans: var(--font-body), ui-sans-serif, system-ui, sans-serif;
 }
 
 html {
   color-scheme: light;
+  background: var(--color-rail);
 }
 
 body {
   background: var(--color-paper);
   color: var(--color-ink);
   font-family: var(--font-sans);
-  /* Figures line up down the page, which matters when twelve scores sit in a column. */
   font-variant-numeric: tabular-nums;
   -webkit-font-smoothing: antialiased;
 }
 
-/* The label above each section. Small, spaced, quiet. */
-.eyebrow {
+/* --- browser surfaces we did not draw but still own --- */
+
+::selection {
+  background: #d9d2be;
+  color: var(--color-ink);
+}
+.on-rail ::selection {
+  background: #3a372e;
+  color: var(--color-rail-ink);
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-ink);
+  outline-offset: 2px;
+}
+.on-rail :focus-visible {
+  outline-color: var(--color-rail-ink);
+}
+
+input,
+textarea {
+  caret-color: var(--color-ink);
+}
+
+/* The reading column scrolls under a fixed rail, so its scrollbar sits on paper. */
+@supports (scrollbar-color: red blue) {
+  .paper-scroll {
+    scrollbar-color: var(--color-rule) transparent;
+    scrollbar-width: thin;
+  }
+}
+
+/* Section labels inside the document. Not a kicker above a heading: these name the client's
+   own report blocks, and the coach uses them to find their way back to one. */
+.label {
   font-size: 0.6875rem;
-  letter-spacing: 0.14em;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--color-ink-faint);
 }
+.rail-strong { color: var(--color-rail-ink); }
 
-/*
- * Evidence is speech, so it is set as speech: indented, with a rule down the left, upright
- * rather than italic. Italics would style it as emphasis, and a quote from a transcript is
- * not emphasis, it is the record.
- */
+.label-rail {
+  font-size: 0.6875rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-rail-faint);
+}
+
+/* Evidence is speech, set as speech. One hairline, not a coloured slab. */
 .evidence {
-  border-left: 2px solid var(--color-rule);
+  border-left: 1px solid var(--color-rule);
   background: var(--color-quote);
 }
 
-/* Native disclosure triangles look like an OS widget. The chevron is drawn instead. */
 summary::-webkit-details-marker { display: none; }
 summary { list-style: none; }
 
+/* --- the one authored moment ---
+   The verdict resolves rather than appears: the scale wipes open and the score settles a
+   moment later. It happens once, on the surface where the number is the point. */
+@keyframes wipe { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0 0 0 0); } }
+@keyframes settle { from { opacity: 0; transform: translateY(0.35em); } to { opacity: 1; transform: none; } }
+
+.verdict-scale { animation: wipe 900ms cubic-bezier(0.16, 1, 0.3, 1) 120ms both; }
+.verdict-score { animation: settle 700ms cubic-bezier(0.16, 1, 0.3, 1) both; }
+.verdict-tick  { animation: settle 500ms cubic-bezier(0.16, 1, 0.3, 1) 820ms both; }
+
+@media (prefers-reduced-motion: reduce) {
+  .verdict-scale, .verdict-score, .verdict-tick { animation: none; }
+}
+
 /* ------------------------------------------------------------------ *
- * Print. The PDF is the same components, so this is the only place
- * screen and paper are allowed to differ.
+ * Print. The rail is a screen device; paper gets one column of ink.
  * ------------------------------------------------------------------ */
 @media print {
-  @page {
-    margin: 18mm 16mm;
-  }
+  @page { margin: 16mm 15mm; }
 
-  html, body {
-    background: #fff;
-  }
+  html, body { background: #fff; }
 
-  /* Anything that only makes sense with a cursor. */
   .no-print { display: none !important; }
 
-  /* The disclosure chevron is an affordance, and paper has nothing to click. */
-  summary svg { display: none; }
-  summary { cursor: default; }
-
-  /* A dimension split across a page break is unreadable, and there are twelve of them. */
-  .avoid-break {
-    break-inside: avoid;
-    page-break-inside: avoid;
+  /* The split collapses. The rail stops being dark and folds into the top of the document,
+     which is why its content was written to survive without the dark ground. */
+  .shell { display: block !important; }
+  .rail {
+    position: static !important;
+    width: auto !important;
+    height: auto !important;
+    background: #fff !important;
+    color: var(--color-ink) !important;
+    border-right: 0 !important;
+    border-bottom: 1px solid var(--color-rule);
+    padding: 0 0 1.25rem !important;
   }
+  .rail .label-rail { color: var(--color-ink-faint) !important; }
+  .rail .rail-soft { color: var(--color-ink-soft) !important; }
+  /* Rail-ink is near-white by definition, so on paper it is invisible ink. */
+  .rail .rail-strong { color: var(--color-ink) !important; }
 
-  /* Browsers drop background colours when printing unless told otherwise. */
-  .evidence {
+  /* The band colours are set as inline styles that read var(--color-lit-*). Redefining those
+     variables for print swaps the whole scale to its paper-weight palette without a single
+     component knowing which ground it is on. */
+  :root {
+    --color-lit-elite: #1a6845;
+    --color-lit-strong: #29557f;
+    --color-lit-inconsistent: #8a5f18;
+    --color-lit-atrisk: #9c4718;
+    --color-lit-fail: #8a2a2a;
+    --color-rail-ink: #171613;
+    --color-rail: #ffffff;
+  }
+  .main { padding: 0 !important; max-width: none !important; }
+
+  .avoid-break { break-inside: avoid; page-break-inside: avoid; }
+
+  .evidence, .keep-colour, .keep-colour * {
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
   }
 
+  summary svg { display: none; }
+  summary { cursor: default; }
   a[href]::after { content: none; }
 }

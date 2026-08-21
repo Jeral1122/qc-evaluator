@@ -1,5 +1,5 @@
 import { bandFor, overallBandFor } from '../rubrics/index.ts'
-import type { RubricSpec } from '../rubrics/types.ts'
+import type { OverallBand, RubricSpec } from '../rubrics/types.ts'
 import type { VerifiedDraft } from './verify.ts'
 
 /**
@@ -59,6 +59,14 @@ export type Scoring = {
   /** The number on the report, 0 to 100. */
   percent: number
   band: string
+  /**
+   * The band thresholds this score was judged against, carried with the result.
+   *
+   * Frozen rather than looked up when the page renders, because a report is a record of what
+   * this rubric said on the day it ran. If a threshold ever moves, an old report still shows
+   * the scale that produced its own grade instead of quietly re-grading itself.
+   */
+  bands: OverallBand[]
   capsFired: CapFired[]
   dimensions: ScoredDimension[]
   /** What the call would have scored if the one thing had been done. */
@@ -176,6 +184,7 @@ export function computeScoring(rubric: RubricSpec, draft: VerifiedDraft): Scorin
     denominator,
     percent,
     band: overallBandFor(rubric, percent),
+    bands: rubric.bands,
     capsFired,
     dimensions,
     projected:

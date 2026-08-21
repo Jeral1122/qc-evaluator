@@ -1,4 +1,5 @@
 import type Anthropic from '@anthropic-ai/sdk'
+import { allowedScores } from '../rubrics/index.ts'
 import type { RubricSpec } from '../rubrics/types.ts'
 
 /**
@@ -62,9 +63,23 @@ HOW TO SCORE
 
 HOW TO WRITE
 
-Write to the coach, not about them. Plain sentences, no jargon, no praise sandwich. "You asked
-what her goal was and moved on before she answered" is useful. "Opportunity exists to deepen
-discovery" is not. The quick fix should be something they could do differently on Monday.`
+Write ABOUT the coach, never TO them. Use their name if you are given one, otherwise say "the
+coach". Never write "you", and never address the reader.
+
+This is a quality record. The first person to read it is a reviewer inside the business, and it
+may be forwarded to a manager before it ever reaches the coach. A report that says "you asked
+her" is ambiguous the moment it leaves the coach's inbox, and reads as an accusation when
+someone else opens it.
+
+  Write:      Dana asked what her goal was and moved on before she answered.
+  Not:        You asked what her goal was and moved on before she answered.
+
+Name the client too, where you have the name. "Renata started to answer and stopped" beats "the
+client started to answer".
+
+Plain sentences, no jargon, no praise sandwich. "Dana asked what her goal was and moved on before
+she answered" is useful. "Opportunity exists to deepen discovery" is not. The quick fix should be
+something the coach could do differently on Monday.`
 
 /**
  * The two blocks of content, rubric first so it can be cached, transcript second.
@@ -77,23 +92,60 @@ export function buildUserContent(
   transcript: string,
   names: { clientName?: string | null; coachName?: string | null } = {},
 ): Anthropic.ContentBlockParam[] {
+  // Names lead the transcript block rather than trailing it, because the whole report is
+  // written in the third person and the model needs to know who it is naming before it reads
+  // a word of the call.
   const who = [
-    names.coachName ? `Coach: ${names.coachName}` : null,
-    names.clientName ? `Client: ${names.clientName}` : null,
-  ]
-    .filter(Boolean)
-    .join('\n')
+    `Refer to the coach as ${names.coachName ?? '"the coach"'}.`,
+    names.clientName
+      ? `Refer to the client as ${names.clientName}.`
+      : 'Refer to the client as "the client", or by whatever name the transcript itself uses.',
+    'Write about them in the third person throughout. Never "you".',
+  ].join(' ')
 
   return [
     {
       type: 'text',
-      text: `Here is the rubric for a ${rubric.title}. Score against this and nothing else.\n\n${rubricMarkdown}`,
+      text:
+        `Here is the rubric for a ${rubric.title}. Score against this and nothing else.\n\n` +
+        `${rubricMarkdown}\n\n${scoreMenu(rubric)}`,
       // Everything above this point is identical on every run of this call type, so it is cached.
       cache_control: { type: 'ephemeral' },
     },
     {
       type: 'text',
-      text: `Here is the transcript to score.${who ? `\n\n${who}` : ''}\n\n---\n\n${transcript}`,
+      text: `Here is the transcript to score.\n\n${who}\n\n---\n\n${transcript}`,
     },
   ]
+}
+
+/**
+ * The exact numbers each dimension may score, spelled out.
+ *
+ * The rubric already contains this, spread across twelve tables written for a human reader, and
+ * a real run failed because of the gap between those two things: the model returned 4 on a
+ * dimension whose table offers 5, 3 and 0. Four is a legal score elsewhere in that same rubric,
+ * so nothing upstream could catch it and the run failed validation.
+ *
+ * Same choice as the quote elision. The check stays; the prompt stops the mistake being made.
+ * Generated from the spec, so it cannot describe a menu the validator would reject.
+ */
+function scoreMenu(rubric: RubricSpec): string {
+  const width = Math.max(...rubric.dimensions.map((d) => d.name.length))
+
+  const rows = rubric.dimensions.map((d) => {
+    const scores = allowedScores(d).join(', ')
+    const optional = d.optional ? '   (or N/A, per the rubric)' : ''
+    return `${d.id.padEnd(4)} ${d.name.padEnd(width)}  ${scores}${optional}`
+  })
+
+  return [
+    'THE ONLY SCORES THIS RUBRIC ACCEPTS',
+    '',
+    'One of these exact numbers per dimension. Anything else fails the run, including a value',
+    'that is valid for a different dimension. If the call sits between two of them, pick one and',
+    'let your reasoning carry the nuance.',
+    '',
+    ...rows,
+  ].join('\n')
 }

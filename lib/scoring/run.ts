@@ -25,8 +25,8 @@ export const STALE_AFTER_MS = (SCORING_MAX_DURATION_SECONDS + 30) * 1000
 
 /** The sentence an operator sees when a job died without being able to say so. */
 export const TIMED_OUT_REASON =
-  'Scoring timed out. The background job was stopped before it finished, so no report was ' +
-  'produced. Submitting the transcript again will start a fresh run.'
+  'This took longer than expected and was stopped before it finished, so no report was ' +
+  'produced. Submitting the transcript again will start it over.'
 
 /**
  * Is this row a job in progress, or a corpse?

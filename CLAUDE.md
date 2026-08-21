@@ -36,7 +36,7 @@ values ("15, 10, 5, 0") and forbids interpolation. Code must respect both.
 
 ---
 
-## Seven rules that decide this build
+## Eight rules that decide this build
 
 1. **Never invent a quote.** Every evidence quote is substring-checked against the submitted
    transcript in code. A fabricated quote fails the run. This is not a prompt instruction, it is a
@@ -60,9 +60,14 @@ values ("15, 10, 5, 0") and forbids interpolation. Code must respect both.
 6. **The rubric text goes into the prompt whole.** The calibration anchors are real reviewer
    corrections. Summarising them is how scoring drifts off the human standard.
 
-7. **No scope nobody asked for.** Five routes. No auth, no run history, no coach comparison, no
-   rubric editing, no retries, no streaming, no feedback panel, no voice agents. Knowing what to
-   leave out is part of what is being scored.
+7. **The report is written ABOUT the coach, never TO them.** "Dana asked what her goal was",
+   never "you asked". The operator reads it before the coach does and it gets forwarded.
+   Verbatim quotes are exempt: those keep whatever the speaker actually said.
+
+8. **No scope nobody asked for.** Six routes. No auth, no coach comparison, no rubric editing,
+   no retries, no streaming, no feedback panel, no voice agents. The one addition is `/runs`,
+   argued for in ARCHITECTURE.md rather than slipped in. Knowing what to leave out is part of
+   what is being scored.
 
 ---
 

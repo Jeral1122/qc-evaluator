@@ -20,7 +20,8 @@ export function DownloadButton({ runId }: { runId: string }) {
         // preview captures a blank page.
         w?.addEventListener('load', () => w.print())
       }}
-      className="no-print shrink-0 rounded-sm border border-rule px-3 py-1.5 text-xs text-ink-soft transition-colors hover:border-ink-faint hover:text-ink"
+      className="no-print inline-flex items-center gap-2 bg-rail-ink px-5 py-2.5 text-sm text-rail
+                 transition-opacity hover:opacity-85"
     >
       Download PDF
     </button>

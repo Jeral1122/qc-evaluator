@@ -66,7 +66,7 @@ export function Dimension({ d, open = false }: { d: ScoredDimension; open?: bool
         ) : (
           <>
             {d.cappedBy && (
-              <p className="mb-4 text-band-atrisk">
+              <p className="mb-4" style={{ color: 'var(--color-band-atrisk)' }}>
                 Capped from {d.scoreBeforeCap} to {d.score} by an automatic rule.
               </p>
             )}
@@ -75,7 +75,7 @@ export function Dimension({ d, open = false }: { d: ScoredDimension; open?: bool
 
             {d.evidence.length > 0 && (
               <div className="mt-4 space-y-2">
-                <p className="eyebrow">From the transcript</p>
+                <p className="label">From the transcript</p>
                 {d.evidence.map((quote, i) => (
                   <blockquote key={i} className="evidence py-2 pl-4 pr-3 text-[0.85rem]">
                     {quote}
@@ -86,7 +86,7 @@ export function Dimension({ d, open = false }: { d: ScoredDimension; open?: bool
 
             {d.quickFix && (
               <div className="mt-4">
-                <p className="eyebrow">Quick fix</p>
+                <p className="label">Quick fix</p>
                 <p className="mt-1">{d.quickFix}</p>
               </div>
             )}

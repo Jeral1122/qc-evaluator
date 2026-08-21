@@ -61,7 +61,15 @@ export async function POST(request: Request) {
     .single<{ id: string }>()
 
   if (error || !data) {
-    return Response.json({ error: 'Could not save the run. The database rejected it.' }, { status: 500 })
+    // Say what actually happened. "The database rejected it" sent me hunting for a bug in the
+    // request when the real answer was that the table had never been created, and an operator
+    // would have had no way at all to work that out. The project rule is that a failure says
+    // why, and that has to hold for the ones nobody planned for too.
+    console.error('runs insert failed', error)
+    return Response.json(
+      { error: `Could not save the run: ${error?.message ?? 'the database returned nothing'}` },
+      { status: 500 },
+    )
   }
 
   // waitUntil keeps the function alive after the response has been flushed. The operator's tab

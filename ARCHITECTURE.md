@@ -268,6 +268,38 @@ number the client meant, and it is the honest move given the source is ambiguous
 shows the raw sum and the denominator used, so the discrepancy is visible rather than papered
 over. **This is the first question I would have asked the client.**
 
+### Sonnet 5 was tried, and the numbers said no
+
+Cost is dominated by output, not by the transcript. A run produces 10,000 to 14,000 output
+tokens against roughly 25,000 input, and most of that output is the model's own reasoning rather
+than the report. So the output rate looks like the lever, and Sonnet 5 charges $15/M against
+Opus 5's $25/M.
+
+The same three transcripts, scored on both:
+
+| Transcript | Opus 5 | Sonnet 5 |
+|---|---|---|
+| `kickoff-01` | 97 Elite | **rejected**, twice out of two attempts |
+| `kickoff-02` | 53 Fail | **65 At risk** |
+| `coaching-01` | 95 Elite | **100 Elite** (105 of 105) |
+
+**Both rejections were the same failure.** Sonnet stitched two separate moments into one quote
+with an ellipsis and presented it as verbatim. The prompt forbids that explicitly, in the same
+paragraph that explains evidence is an array precisely so nothing has to be stitched. Opus obeys
+it; Sonnet did not, repeatably.
+
+**The grade inflation is the disqualifying half.** `kickoff-02` is the weak call, and Sonnet
+moved it a whole band, from Fail to At risk. This tool exists to tell a business which coaches
+are underperforming. A model that reads a failing call as passing does not merely lose accuracy,
+it defeats the product: the coach who most needs intervention is the one who stops being flagged.
+
+**And the saving was smaller than the rate card implies.** Sonnet produced 15,769 output tokens
+where Opus produced 13,890, 14% more, because it thought longer. Real cost was $0.309 against
+$0.451, a saving of $0.14 a run rather than the 40% the rates suggest. At a 50% rejection rate on
+`kickoff-01`, the cost of a *successful* Sonnet run there is higher than Opus outright.
+
+Fourteen cents, against the one criterion the exercise says will decide the outcome.
+
 ### The 65,000 character question
 
 65,000 characters is roughly **16,000 tokens**. Claude's context window is 200,000. It fits with
@@ -403,12 +435,13 @@ The cost is honest: the operator sees a browser print dialog rather than an inst
 | Route | Does |
 |---|---|
 | `/` | paste transcript, pick rubric, submit |
+| `/runs` | every call scored so far |
 | `POST /api/runs` | validate, insert, hand off scoring, return id |
 | `GET /api/runs/[id]` | status poll while queued or running |
 | `/runs/[id]` | the report, or progress, or the failure reason |
 | `/runs/[id]/print` | print-styled report the PDF button targets |
 
-Five routes. Anything past this is scope nobody asked for.
+Six routes.
 
 ---
 
@@ -423,7 +456,8 @@ Questions I would have asked the client, with the assumption made instead. These
 | When two total caps fire at once, which applies? | The lowest. Caps are ceilings and the tightest ceiling is the real one. |
 | Do total caps apply before or after normalising to 100? | After. The caps are written as "max 75 total" against the 100 scale the bands use. |
 | Who decides coaching D4 is disabled, the model or the operator? | **The model**, because the rubric spells out four detection criteria and requires a written `disabled_reason`. Asking the operator adds a UI control the brief never asked for, and the reason string is auditable either way. |
-| Which model scores? | **Opus 5, switchable by `SCORING_MODEL`.** The exercise is judged on fidelity to rubrics full of nuanced calibration anchors, latency is invisible behind `waitUntil`, and the volume is a handful of runs. Dropping to Sonnet is a one-line change if the function limit bites. |
+| Which model scores? | **Opus 5.** Sonnet 5 was tried and rejected on evidence, not on instinct: see below. `SCORING_MODEL` still switches it with no code change. |
+| Is the report written to the coach, or about them? | **About them, by name.** The brief says "written to the coach", which reads as second person. But the operator reads it first, and a record that says "you asked her" is ambiguous the moment it is forwarded to a manager, and reads as an accusation when anyone but the coach opens it. So: "Dana asked what her goal was", never "you asked". Verbatim quotes keep whatever the speaker actually said. |
 | Are band thresholds inclusive at the boundary? | Inclusive lower bound, so exactly 70 lands in the band starting at 70. |
 | Should a run be re-scorable? | No. A run is an immutable record. Re-scoring means a new run and a new URL. |
 | Is the transcript sensitive enough to need auth? | No auth. The brief describes an internal operator tool and the URL is an unguessable UUID. Real deployment needs auth on day one and I would say so. |
@@ -433,8 +467,21 @@ Questions I would have asked the client, with the assumption made instead. These
 
 ## 9. What is deliberately not built
 
-Auth. A run history list. Coach comparison. Rubric editing. Retries. Streaming progress.
-Multi-tenant anything. Sales and strategic-review call types.
+Auth. Coach comparison. Rubric editing. Retries. Streaming progress. Multi-tenant anything.
+Sales and strategic-review call types.
+
+**A run history list was on this list and came off it, deliberately.** The brief says to build no
+scope nobody asked for, and knowing what to leave out is part of what is being judged, so this
+is a decision rather than a slip.
+
+The reason it came off: the problem this product exists to solve is stated in the brief itself.
+The business was pasting transcripts into a chat window, and *"nothing was saved, nothing was
+comparable between coaches."* A tool that scores one call and then forgets it fixes the first
+half of that sentence and leaves the second half exactly where it was. `/runs` is one query
+against columns already denormalised for it.
+
+What it is still not is a dashboard. No filters, no coach leaderboards, no averages over time.
+Those are a different product and nobody asked for them.
 
 **The "your feedback" panel.** It is visible in the app Luke and Ruben demo in the exercise video,
 and they say out loud that candidates should not build it. Named here so it is clear it was seen

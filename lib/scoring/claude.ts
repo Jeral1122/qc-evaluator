@@ -6,10 +6,27 @@ import { loadRubricMarkdown } from '../rubrics/index.ts'
 import type { RubricSpec } from '../rubrics/types.ts'
 
 /**
- * Opus 5 by default. The whole exercise is judged on whether the scores are faithful to rubrics
- * full of nuanced reviewer corrections, latency is invisible because this runs in the background,
- * and the volume here is a handful of runs. The env var makes dropping to a faster model a
- * config change rather than a code change.
+ * Opus 5, and this was tested rather than assumed.
+ *
+ * Cost here is dominated by OUTPUT, not by the transcript: a run produces 10,000 to 14,000
+ * output tokens, most of which is the model's own reasoning, against roughly 25,000 input. So
+ * the output rate looks like the obvious lever, and Sonnet 5's is $15/M against Opus's $25/M.
+ *
+ * Sonnet was tried and rejected on evidence, scoring the same transcripts on both:
+ *
+ *   kickoff-01   Opus 97 Elite   ·  Sonnet REJECTED twice, both times for a quote it had
+ *                                   stitched together with an ellipsis, which the prompt
+ *                                   forbids explicitly and Opus obeys
+ *   kickoff-02   Opus 53 Fail    ·  Sonnet 65 At risk      <- a whole band higher
+ *   coaching-01  Opus 95 Elite   ·  Sonnet 100 Elite       <- a perfect 105 of 105
+ *
+ * The grade inflation is the disqualifying half. This tool exists to tell a business which
+ * coaches are underperforming, and a model that reads a failing call as passing does not just
+ * lose accuracy, it defeats the product. Sonnet also produced 14% MORE output than Opus, so the
+ * real saving was $0.14 a run rather than the 40% the rate card suggests.
+ *
+ * `SCORING_MODEL` still switches models with no code change. Anything set there should be
+ * re-checked against these three numbers first.
  */
 export const SCORING_MODEL = process.env.SCORING_MODEL ?? 'claude-opus-5'
 
@@ -18,7 +35,15 @@ const MAX_TOKENS = 24_000
 
 export type ScoringResult = {
   draft: ReportDraft
-  usage: { inputTokens: number; outputTokens: number; cacheReadTokens: number; ms: number }
+  usage: {
+    inputTokens: number
+    outputTokens: number
+    /** Written to the cache this run, billed at 1.25x. Only nonzero on a cold run. */
+    cacheWriteTokens: number
+    /** Served from the cache, billed at 0.1x. Only nonzero within the cache window. */
+    cacheReadTokens: number
+    ms: number
+  }
 }
 
 /**
@@ -75,8 +100,11 @@ export async function scoreTranscript(
   return {
     draft: response.parsed_output,
     usage: {
+      // input_tokens counts only what was NOT cached, so reporting it alone understates the
+      // real input by the size of the rubric. All three numbers or none.
       inputTokens: response.usage.input_tokens,
       outputTokens: response.usage.output_tokens,
+      cacheWriteTokens: response.usage.cache_creation_input_tokens ?? 0,
       cacheReadTokens: response.usage.cache_read_input_tokens ?? 0,
       ms: Date.now() - startedAt,
     },

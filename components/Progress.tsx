@@ -2,28 +2,40 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { Shell, Wordmark } from './Shell.tsx'
 
 /**
  * Shown while a run is queued or running.
  *
- * Polls the status endpoint and reloads the page once the run reaches a terminal state. Polling
- * rather than streaming because there is exactly one thing to learn (has it finished) and a
- * websocket to learn it would be machinery nobody asked for.
+ * Polls the status endpoint and reloads once the run reaches a terminal state. Polling rather
+ * than streaming because there is exactly one thing to learn, has it finished, and a websocket
+ * to learn it would be machinery nobody asked for.
  *
- * Every three seconds. A run takes two to three minutes, so this is roughly fifty requests
- * against a single indexed row, and it means the report appears within a few seconds of being
- * ready rather than on a refresh the operator has to think about.
- *
- * The elapsed counter is not decoration. Without it a two minute wait is indistinguishable from
- * a hang, and the whole point of the run page is that it never leaves anyone guessing.
+ * The dimension list is NOT progress. Nothing here knows which dimension the model is on, and
+ * ticking them off one by one would be a lie told in pixels. It is the contents page of the
+ * document being written, so the wait has something to read.
  */
-export function Progress({ runId, startedAt }: { runId: string; startedAt: string }) {
+export function Progress({
+  runId, startedAt, rubricTitle, dimensions,
+}: {
+  runId: string
+  startedAt: string
+  rubricTitle: string
+  dimensions: { id: string; name: string; max: number }[]
+}) {
   const router = useRouter()
-  const [elapsed, setElapsed] = useState(() => Math.floor((Date.now() - Date.parse(startedAt)) / 1000))
+  const [elapsed, setElapsed] = useState<number | null>(null)
+
+  // Reading the clock during render is a bug waiting to happen, so the first tick sets it.
+  useEffect(() => {
+    const began = Date.parse(startedAt)
+    const update = () => setElapsed(Math.max(0, Math.floor((Date.now() - began) / 1000)))
+    update()
+    const tick = setInterval(update, 1000)
+    return () => clearInterval(tick)
+  }, [startedAt])
 
   useEffect(() => {
-    const tick = setInterval(() => setElapsed((s) => s + 1), 1000)
-
     const poll = setInterval(async () => {
       try {
         const response = await fetch(`/api/runs/${runId}`, { cache: 'no-store' })
@@ -36,31 +48,49 @@ export function Progress({ runId, startedAt }: { runId: string; startedAt: strin
         // A dropped request is not worth surfacing. The next tick tries again.
       }
     }, 3000)
-
-    return () => {
-      clearInterval(tick)
-      clearInterval(poll)
-    }
+    return () => clearInterval(poll)
   }, [runId, router])
 
-  const minutes = Math.floor(elapsed / 60)
-  const seconds = String(elapsed % 60).padStart(2, '0')
+  const clock =
+    elapsed === null ? '—' : `${Math.floor(elapsed / 60)}:${String(elapsed % 60).padStart(2, '0')}`
+
+  const rail = (
+    <>
+      <Wordmark context={rubricTitle} />
+
+      <h1 className="font-display text-[2.4rem] leading-[1.1] tracking-tight">
+        Reading the transcript.
+      </h1>
+
+      <p className="font-display text-5xl leading-none tabular-nums text-rail-faint">{clock}</p>
+
+      <p className="rail-soft max-w-[38ch] text-[0.925rem] leading-[1.7] text-rail-soft">
+        Every score has to be backed by something actually said on the call, so this usually
+        takes two to three minutes.
+      </p>
+
+      <p className="rail-soft mt-auto border-t border-rail-rule pt-6 text-sm leading-relaxed text-rail-soft">
+        You can close this tab. The work is happening on our side, not in your browser, and this
+        link will have the finished report whenever you come back to it.
+      </p>
+    </>
+  )
 
   return (
-    <main className="mx-auto max-w-[42rem] px-6 pt-24 sm:px-8">
-      <p className="eyebrow">Scoring</p>
-      <h1 className="mt-3 font-display text-3xl leading-tight">Reading the transcript.</h1>
-      <p className="mt-4 max-w-[54ch] text-[0.95rem] leading-relaxed text-ink-soft">
-        Twelve dimensions, each one evidenced against the transcript. This usually takes two to
-        three minutes.
-      </p>
-      <p className="mt-8 font-display text-2xl text-ink-faint">
-        {minutes}:{seconds}
-      </p>
-      <p className="mt-8 max-w-[54ch] border-l-2 border-rule pl-4 text-sm text-ink-soft">
-        You can close this tab. The scoring is running on the server, not in your browser, and
-        this link will have the finished report whenever you come back to it.
-      </p>
-    </main>
+    <Shell rail={rail}>
+      <p className="label">What is being scored</p>
+      <ul className="mt-5">
+        {dimensions.map((d) => (
+          <li
+            key={d.id}
+            className="flex items-baseline gap-5 border-b border-rule py-3 text-[0.95rem] text-ink-faint"
+          >
+            <span className="w-8 shrink-0 text-xs">{d.id}</span>
+            <span className="flex-1">{d.name}</span>
+            <span className="shrink-0 text-xs tabular-nums">{d.max}</span>
+          </li>
+        ))}
+      </ul>
+    </Shell>
   )
 }
